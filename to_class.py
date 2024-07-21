@@ -19,12 +19,14 @@ class Data:
   def __init__(self,X1:torch.Tensor,
                y :torch.Tensor,
                X2:Optional[torch.Tensor]= None,
+               bias:Optional[torch.Tensor]= None,
                n_samples = 30):
     
     
     self.X1 = torch.tensor(X1).flatten()
     self.y  = torch.tensor(y).flatten()
-    self.X2 = self.X2 = torch.tensor(X2) if X2 is not None else None
+    self.X2 = torch.tensor(X2) if X2 is not None else None
+    self.bias = torch.tensor(bias) if bias is not None else None
     self.n_samples = n_samples
 
 
@@ -32,12 +34,11 @@ class Data:
 #----------------------------------------------------------------------------------------------------------------PLOT DATA
   def plot_data(self):
 #---------------------------ONE FEATURES--------------------
-    if (self.X2 is None):
+    if (self.X2 is None ) and (self.bias is None):
       plot = go.Scatter(
         x = self.X1,
         y = self.y,
-        mode = 'markers',
-      )
+        mode = 'markers')
 
       layout = go.Layout(
               title='Single Feature Regression Plot',
@@ -46,13 +47,12 @@ class Data:
               hovermode='closest')
 
   #-----------TWO FEATURES--------
-    if (self.X2 is not None):
+    if (self.X2 is not None) and (self.bias is None):
       plot = go.Scatter3d(
         x = self.X1,
         y = self.X2,
         z = self.y,
-        mode = 'markers'
-      )
+        mode = 'markers')
 
       layout = go.Layout(
               title='Two Features Regression Plot',
@@ -60,8 +60,23 @@ class Data:
                   xaxis_title='X1',
                   yaxis_title='X2',
                   zaxis_title='Y'
-              ),
-              hovermode='closest')
+              ),hovermode='closest')
+
+  
+#-------------ONE FEATURE AND A BIAS------------------
+    if (self.X2 is None) and (self.bias is not None):
+      plot = go.Scatter(
+          x = self.X1,
+          y = self.X1 + self.bias,
+          mode = 'markers')
+
+      layout = go.Layout(
+        title='Single Feature Regression Plot',
+        xaxis=dict(title='X1'),
+        yaxis=dict(title='Y'),
+        hovermode='closest')
+
+
 
     figure = go.Figure(data=[plot],layout=layout)
     return figure
@@ -77,9 +92,14 @@ class Data:
     #-------------------------------------ONE FEATURES-----------------------------------
     if (self.X2 is None) and (bias is False):
       w1_range = torch.linspace(span-10,span+10,self.n_samples)
+      COST = []
+      for w1 in w1_range:
+         pred = self.X1*w1
+         cost = cost_fn(pred,self.y)
+         COST.append(cost.item())
       landscape = go.Scatter(
         x = w1_range,
-        y = [cost_fn((self.X1*w),self.y).item() for w in w1_range],
+        y = COST,
         mode = 'lines'
       )
     
@@ -172,9 +192,9 @@ elif n_features == 'Two Features':
     with col2:
         st.plotly_chart(fig_loss, use_container_width=True)
 
-else: 
+elif n_features == 'One Feature And A Bias': 
     X, y = datasets.make_regression(n_features=1, n_samples=n_samples, noise=2, random_state=1, bias=5)
-    data = Data(X,y)
+    data = Data(X,y,bias=5)
     fig_data = data.plot_data()
     fig_loss = data.landscape(bias=True,cost_fn=selected_loss_fn)
     with col1:
