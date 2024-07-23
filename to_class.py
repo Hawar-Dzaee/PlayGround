@@ -28,12 +28,16 @@ class Data:
     self.bias = torch.tensor(bias) if bias is not None else None
     self.n_samples = n_samples
 
+    self.ONE_FEATURE  = (self.X2 is None) and (self.bias is None)
+    self.TWO_FEATURES = (self.X2 is not None) and (self.bias is None)
+    self.BIAS = (self.X2 is None) and (self.bias is not None)
+
 
 
 #----------------------------------------------------------------------------------------------------------------PLOT DATA
   def plot_data(self):
 #---------------------------ONE FEATURES--------------------
-    if (self.X2 is None ) and (self.bias is None):
+    if self.ONE_FEATURE:
       plot = go.Scatter(
         x = self.X1,
         y = self.y,
@@ -46,7 +50,7 @@ class Data:
               hovermode='closest')
 
   #-----------TWO FEATURES--------
-    if (self.X2 is not None) and (self.bias is None):
+    if self.TWO_FEATURES:
       plot = go.Scatter3d(
         x = self.X1,
         y = self.X2,
@@ -63,10 +67,10 @@ class Data:
 
   
 #-------------ONE FEATURE AND A BIAS------------------
-    if (self.X2 is None) and (self.bias is not None):
+    if self.BIAS:
       plot = go.Scatter(
           x = self.X1,
-          y = self.X1 + self.bias,
+          y = self.y,
           mode = 'markers')
 
       layout = go.Layout(
@@ -86,7 +90,7 @@ class Data:
 
 
     #-------------------------------------ONE FEATURES-----------------------------------
-    if (self.X2 is None) and (self.bias is None):
+    if self.ONE_FEATURE:
 
       w1_range = torch.linspace(coef_1-10,coef_1+10,self.n_samples)
       COST = []
@@ -109,7 +113,7 @@ class Data:
 
     
     #-------------------------------------TWO FEATURES-----------------------------------
-    if (self.X2 is not None) and (self.bias is None):
+    if self.TWO_FEATURES:
       w1_m,w2_m = torch.meshgrid(torch.linspace(coef_1-10,coef_1+10,self.n_samples ),torch.linspace(coef_2-10,coef_2+10,self.n_samples ),indexing='ij')
       w1_f,w2_f = w1_m.flatten() , w2_m.flatten()
 
@@ -147,7 +151,7 @@ class Data:
                   )))
 
     # -------------------------------------ONE FEATURE AND BIAS-----------------------------------
-    if (self.X2 is  None) and (self.bias is not None ):
+    if self.BIAS:
 
       w1_m,b_m = torch.meshgrid(torch.linspace(coef_1-10,coef_1+10,self.n_samples ),torch.linspace(self.bias-10,self.bias+10,self.n_samples),indexing='ij')
       w1_f,b_f = w1_m.flatten() , b_m.flatten()
