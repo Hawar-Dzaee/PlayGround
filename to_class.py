@@ -20,13 +20,18 @@ class Data:
                y :torch.Tensor,
                X2:Optional[torch.Tensor]= None,
                bias:Optional[torch.Tensor]= None,
-               n_samples = 20):
+               n_samples = 20,
+               init_w_1 = torch.tensor(1.),
+               init_w_2 = torch.tensor(1.)
+               ):
     
     self.X1 = torch.tensor(X1).flatten()
     self.y  = torch.tensor(y).flatten()
     self.X2 = torch.tensor(X2) if X2 is not None else None
     self.bias = torch.tensor(bias) if bias is not None else None
     self.n_samples = n_samples
+    self.init_w_1 = init_w_1
+    self.init_w_2 = init_w_2
 
     self.ONE_FEATURE  = (self.X2 is None) and (self.bias is None)
     self.TWO_FEATURES = (self.X2 is not None) and (self.bias is None)
@@ -41,7 +46,8 @@ class Data:
       plot = go.Scatter(
         x = self.X1,
         y = self.y,
-        mode = 'markers')
+        mode = 'markers',
+        name = 'Data')
 
       layout = go.Layout(
               title='Single Feature Regression Plot',
@@ -81,12 +87,16 @@ class Data:
 
 
 
-    figure = go.Figure(data=[plot],layout=layout)
-    return figure
+    # figure = go.Figure(data=[plot],layout=layout)
+    # return figure
+    return plot,layout
   
 
 #----------------------------------------------------------------------------------------------------------------LOSS LANDSCAPE
   def landscape(self,cost_fn = nn.MSELoss(),coef_1 = 10,coef_2 =10):
+    '''cost_fn : choosing the loss function.
+       coef_1  : provide w1, so the landscape can capture the sweet spot, right of the sweet spot, and left of the sweet spot.
+       coef_2  : provide w2, same logic as the above'''
 
 
     #-------------------------------------ONE FEATURES-----------------------------------
@@ -191,6 +201,59 @@ class Data:
     figure = go.Figure(data=landscape,layout=layout)
     return figure
   
+#----------------------------------------------------------------------------------------------------------------PLOT MODEL------------METHOD 3--------
+
+  def fit_model(self):
+
+      if self.ONE_FEATURE :
+        plot_fit_model = go.Scatter(
+          x = self.X1,
+          y = self.X1 * self.init_w_1,
+          mode = 'lines',
+          line = dict(color='rgb(27,158,119)'),
+          name = 'model'
+        )
+
+      elif self.TWO_FEATURES:
+        X1_span = torch.linspace(self.X1.min().item(),self.X1.max().item(),100)
+        X2_span = torch.linspace(self.X2.min().item(),self.X2.max().item(),100)
+
+        X1_mesh,X2_mesh = torch.meshgrid(X1_span,X2_span,indexing='ij')
+        y = (self.init_w_1 * X1_mesh) + (self.init_w_2 * X2_mesh)
+
+        plot_fit_model = go.Surface(
+          x = X1_mesh,
+          y = X2_mesh,
+          z = y ,
+          name = 'model',
+          colorscale = ['rgb(27,158,119)','rgb(27,158,119)'],
+          showscale = False,
+
+        )
+
+      elif self.BIAS:
+        plot_fit_model = go.Scatter(
+          x = self.X1,
+          y = (self.X1 * self.init_w_1) + self.bias,
+          mode = 'lines',
+          line = dict(color='rgb(27,158,119)'),
+          name = 'model'
+        )
+
+
+      return plot_fit_model
+  
+
+#----------------------------------------------------------------------------------------------------------------CONTAINER------------METHOD 4--------
+
+  def plot_container(self):
+    data,data_layout = self.plot_data()
+    fit_model = self.fit_model()
+    
+    figure = go.Figure(data=[data,fit_model],layout=data_layout)
+
+    return figure
+
 
 #----------------------------------------------------------------------------------------
 # streamlit
@@ -223,7 +286,7 @@ col1, col2 = st.columns(2)
 if n_features == 'One Feature And No Bias':
     X, y,coef = datasets.make_regression(n_features=1, n_samples=n_samples, noise=2, random_state=1, bias=0,coef=True)
     data = Data(X,y)
-    fig_data = data.plot_data()
+    fig_data = data.plot_container()
     fig_loss = data.landscape(cost_fn=selected_loss_fn,coef_1=coef)
     with col1:
         st.plotly_chart(fig_data, use_container_width=True)
@@ -233,7 +296,7 @@ if n_features == 'One Feature And No Bias':
 elif n_features == 'Two Features':
     X, y,coef = datasets.make_regression(n_features=2, n_samples=n_samples, noise=2, random_state=1, bias=0,coef=True)
     data = Data(X[:,0],y,X[:,1])
-    fig_data = data.plot_data()
+    fig_data = data.plot_container()
     fig_loss = data.landscape(cost_fn=selected_loss_fn,coef_1=coef[0],coef_2=coef[1])
     with col1:
         st.plotly_chart(fig_data, use_container_width=True)
@@ -243,7 +306,7 @@ elif n_features == 'Two Features':
 elif n_features == 'One Feature And A Bias': 
     X, y,coef = datasets.make_regression(n_features=1, n_samples=n_samples, noise=2, random_state=1, bias=5,coef=True)
     data = Data(X,y,bias=5)
-    fig_data = data.plot_data()
+    fig_data = data.plot_container()
     fig_loss = data.landscape(cost_fn=selected_loss_fn,coef_1=coef)
     with col1:
         st.plotly_chart(fig_data, use_container_width=True)
