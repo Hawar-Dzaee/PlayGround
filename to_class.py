@@ -2,14 +2,11 @@
 import numpy as np 
 import matplotlib.pyplot as plt 
 import plotly.graph_objects as go 
-
 import torch 
 from torch import nn
 from sklearn import datasets
 from sklearn.preprocessing import StandardScaler
-
 from typing import Optional,Callable
-
 import streamlit as st 
 
 
@@ -203,7 +200,7 @@ class Data:
   
 #----------------------------------------------------------------------------------------------------------------PLOT MODEL------------METHOD 3--------
 
-  def fit_model(self):
+  def plot_model(self):
 
       if self.ONE_FEATURE :
         plot_fit_model = go.Scatter(
@@ -247,8 +244,9 @@ class Data:
 #----------------------------------------------------------------------------------------------------------------CONTAINER------------METHOD 4--------
 
   def plot_container(self):
+    '''plot_container collects plots from plot_data() and plot_model()'''
     data,data_layout = self.plot_data()
-    fit_model = self.fit_model()
+    fit_model = self.plot_model()
     
     figure = go.Figure(data=[data,fit_model],layout=data_layout)
 
@@ -304,7 +302,7 @@ elif n_features == 'Two Features':
         st.plotly_chart(fig_loss, use_container_width=True)
 
 elif n_features == 'One Feature And A Bias': 
-    X, y,coef = datasets.make_regression(n_features=1, n_samples=n_samples, noise=2, random_state=1, bias=5,coef=True)
+    X, y,coef = datasets.make_regression(n_features=1, n_samples=n_samples, noise=2, random_state=55, bias=5,coef=True)
     data = Data(X,y,bias=5)
     fig_data = data.plot_container()
     fig_loss = data.landscape(cost_fn=selected_loss_fn,coef_1=coef)
