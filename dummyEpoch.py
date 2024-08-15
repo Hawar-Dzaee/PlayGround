@@ -23,20 +23,15 @@ optimizer = torch.optim.Adam(model.parameters(),lr=0.01)
 
 
 
-
-
-# Initialize or load the model, loss function, and optimizer
 if 'model' not in st.session_state:
     st.session_state.model = DummyModel()
 if 'optimizer' not in st.session_state:
     st.session_state.optimizer = torch.optim.Adam(st.session_state.model.parameters(), lr=0.01)
-if 'loss_fn' not in st.session_state:
-    st.session_state.loss_fn = nn.MSELoss()
+
 
 def run_epoch():
     model = st.session_state.model
     optimizer = st.session_state.optimizer
-    loss_fn = st.session_state.loss_fn
     
     y_hat = model(X.view(-1, 1))
     loss = loss_fn(y_hat, y.view(-1, 1))
@@ -65,3 +60,7 @@ if st.button("Run Epoch"):
 
 if st.session_state.losses:
     st.line_chart(st.session_state['losses'])
+
+# Display the entire session state
+st.write("Session State:")
+st.write(st.session_state)

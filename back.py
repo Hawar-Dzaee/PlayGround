@@ -8,7 +8,12 @@ from sklearn.preprocessing import StandardScaler
 import streamlit as st 
 
 
-
+#TODO
+# 1- standardize the data.
+# 2- update the line after running each epoch.
+# 3- create (ball & Diamond).
+# 4- after the ball after running each epoch.
+# -------------------------------------------
 
 def Data_Plot_Single_Feature(X1,y):
   plot = go.Scatter(
@@ -51,7 +56,7 @@ def landscape(X1,W1,y,cost_fn = nn.MSELoss(),n_samples =20):
       return plot
 
 
-
+#-----------------------------------------------------STREAMLIT
 
 st.set_page_config(layout='wide')
 st.title("Play Ground")
@@ -90,3 +95,53 @@ with col1:
       st.plotly_chart(fig_data, use_container_width=True)
 with col2:
       st.plotly_chart(fig_loss, use_container_width=True)
+
+
+#---------------------------------------------------------------SESSION
+X_tensor = torch.tensor(X,dtype=torch.float32).view(-1,1)
+y_tensor = torch.tensor(y,dtype=torch.float32).view(-1,1)
+
+
+model = nn.Linear(1,1,bias=False)
+optimizer = torch.optim.Adam(model.parameters(),lr=0.01)
+
+
+
+if 'model' not in st.session_state:
+    st.session_state["model"] = model 
+if 'optimizer' not in st.session_state:
+    st.session_state["optimizer"] = torch.optim.Adam(st.session_state["model"].parameters(), lr=0.01)
+
+
+def run_epoch():
+    model = st.session_state["model"]
+    optimizer = st.session_state["optimizer"]
+    
+    y_hat = model(X_tensor)
+    loss = selected_loss_fn(y_hat, y_tensor)
+    loss.backward()
+    optimizer.step()
+    optimizer.zero_grad()
+    return loss.item(),model.weight[0].item()
+
+
+st.title("Epoch Runner")
+
+if 'epoch_count' not in st.session_state:
+    st.session_state['epoch_count'] = 0
+
+# if 'losses' not in st.session_state:    # This might come in handy later on. 
+#     st.session_state['losses'] = []
+
+
+if st.button("Run Epoch"):
+    loss,weight = run_epoch()
+    st.session_state['epoch_count'] += 1
+    # st.session_state['losses'].append(loss)
+    
+    st.write(f"Epoch {st.session_state['epoch_count']} completed.")
+    st.write(f"Loss: {loss:.4f}")
+    st.write(f'Weight : {weight}')
+
+
+st.write(st.session_state)
