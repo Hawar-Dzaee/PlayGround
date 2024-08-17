@@ -9,10 +9,9 @@ import streamlit as st
 
 
 #TODO
-# 1- standardize the data.
-# 2- update the line after running each epoch.
-# 3- create (ball & Diamond).
-# 4- after the ball after running each epoch.
+# 1- update the line after running each epoch.
+# 2- create (ball).
+# 3- after the ball after running each epoch.
 # -------------------------------------------
 
 def Data_Plot_Single_Feature(X1,y):
@@ -35,7 +34,7 @@ def Model_Plot_Single_Feature(X1,W1):
   return plot_2
 
 
-def landscape(X1,W1,y,cost_fn = nn.MSELoss(),n_samples =20):
+def Landscape_Diamond(X1,W1,y,cost_fn = nn.MSELoss(),n_samples =20):
       X1 = torch.tensor(X1)
       W1 = torch.tensor(W1)
       y = torch.tensor(y)
@@ -47,13 +46,22 @@ def landscape(X1,W1,y,cost_fn = nn.MSELoss(),n_samples =20):
          cost = cost_fn(pred,y)
          COST.append(cost.item())
 
-      plot = go.Scatter(
+      landscape = go.Scatter(
         x = w1_range,
         y = COST,
         mode = 'lines'
       )
 
-      return plot
+      diamond = go.Scatter(
+           x = (w1_range[torch.argmin(torch.tensor(COST))],),
+           y = (torch.min(torch.tensor(COST)),),
+           mode= 'markers',
+           marker = dict(color='yellow',size=10,symbol='diamond'),
+           name = 'Global minimum'
+
+      )
+
+      return landscape,diamond
 
 
 #-----------------------------------------------------STREAMLIT
@@ -86,8 +94,19 @@ X, y,coef = datasets.make_regression(n_features=1, n_samples=n_samples, noise=2 
 X = X.reshape(-1)
 
 
+X_tensor = torch.tensor(X,dtype=torch.float32).view(-1,1)
+y_tensor = torch.tensor(y,dtype=torch.float32).view(-1,1)
+
+model = nn.Linear(1,1,bias=False)
+model.weight.data = torch.tensor([[65.0]])
+optimizer = torch.optim.Adam(model.parameters(),lr=0.01)
+
+
+
 fig_data = go.Figure(data = [Data_Plot_Single_Feature(X,y),Model_Plot_Single_Feature(X,coef)])
-fig_loss = go.Figure(data= [landscape(X,coef,y,cost_fn=selected_loss_fn)])
+
+landscape,diamond = Landscape_Diamond(X,coef,y,cost_fn=selected_loss_fn)
+fig_loss = go.Figure(data= [landscape,diamond])
 
 col1, col2 = st.columns(2)
 
@@ -98,13 +117,6 @@ with col2:
 
 
 #---------------------------------------------------------------SESSION
-X_tensor = torch.tensor(X,dtype=torch.float32).view(-1,1)
-y_tensor = torch.tensor(y,dtype=torch.float32).view(-1,1)
-
-
-model = nn.Linear(1,1,bias=False)
-optimizer = torch.optim.Adam(model.parameters(),lr=0.01)
-
 
 
 if 'model' not in st.session_state:
